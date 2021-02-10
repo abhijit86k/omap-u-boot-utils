@@ -102,8 +102,13 @@ CFLAGS=-Wall -O3 -Iinclude -Ilib/lcfg
 LDFLAGS=
 
 CFLAGS+=-fdata-sections -ffunction-sections
+ifeq ($(HOSTOS),darwin)
+LDFLAGS+=-Wl,-dead_strip
+else
 LDFLAGS+=-Wl,--gc-sections -Wl,--print-gc-sections -Wl,--no-print-gc-sections
-LDFLAGS_USB=-lusb
+endif
+# should usually produce -lusb-1.0
+LDFLAGS_USB=`pkg-config libusb-1.0 --libs`
 
 CROSS_CC ?=$(CROSS_COMPILE)gcc
 CROSS_OBJDUMP ?=$(CROSS_COMPILE)objdump
@@ -175,6 +180,11 @@ $(PUSB_EXE): $(PUSB_OBJ) $(LIB_OBJ) makefile
 	@$(ECHO) "Generating:  $@"
 	$(if $(VERBOSE:1=),@)$(LD) $(PUSB_OBJ) $(LIB_OBJ) $(LDFLAGS) $(LDFLAGS_USB) -o $@
 	@$(ECHO)
+
+$(PUSB_OBJ): $(PUSB_FILES)
+	@$(ECHO) "Compiling: " $<
+	$(if $(VERBOSE:1=),@)$(CC) $(CFLAGS) `pkg-config libusb-1.0 --cflags` -o $@ -c $< 
+
 
 .PHONY : docs
 docs:
